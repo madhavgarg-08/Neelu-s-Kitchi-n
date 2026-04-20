@@ -1,13 +1,23 @@
 "use client";
 import { useState } from "react";
 
-export default function Home() {
+type Product = {
+  name: string;
+  category: string;
+  price: number;
+  image: string;
+};
 
+type CartItem = Product & {
+  qty: number;
+};
+
+export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
-  const [cart, setCart] = useState<any>({});
+  const [cart, setCart] = useState<Record<string, CartItem>>({});
 
-  const products = [
+  const products: Product[] = [
     { name: "Rajma Chawal", category: "Meals", price: 120, image: "rajmachawal.jpg" },
     { name: "Chole Bhature", category: "Meals", price: 100, image: "cholebhature.jpg" },
     { name: "Veg Biryani", category: "Meals", price: 130, image: "vegbiryani.jpg" },
@@ -18,7 +28,7 @@ export default function Home() {
 
   const categories = ["All", "Meals", "Snacks", "Pickles"];
 
-  const addItem = (item: any) => {
+  const addItem = (item: Product) => {
     const updated = { ...cart };
     if (updated[item.name]) {
       updated[item.name].qty += 1;
@@ -28,7 +38,7 @@ export default function Home() {
     setCart(updated);
   };
 
-  const removeItem = (item: any) => {
+  const removeItem = (item: Product) => {
     const updated = { ...cart };
     if (updated[item.name].qty > 1) {
       updated[item.name].qty -= 1;
@@ -38,27 +48,28 @@ export default function Home() {
     setCart(updated);
   };
 
-  const totalItems = Object.values(cart).reduce((sum: any, i: any) => sum + i.qty, 0);
-  const totalPrice = Object.values(cart).reduce((sum: any, i: any) => sum + i.qty * i.price, 0);
+  const totalItems = Object.values(cart).reduce((sum, i) => sum + i.qty, 0);
+  const totalPrice = Object.values(cart).reduce((sum, i) => sum + i.qty * i.price, 0);
 
   const generateWhatsAppMessage = () => {
     let message = "Hi, I want to order:\n";
-    Object.values(cart).forEach((item: any) => {
+    Object.values(cart).forEach((item) => {
       message += `- ${item.name} x${item.qty} (₹${item.price * item.qty})\n`;
     });
     message += `Total: ₹${totalPrice}`;
     return `https://wa.me/919315113365?text=${encodeURIComponent(message)}`;
   };
 
-  const filteredProducts = products.filter((item) =>
-    (selectedCategory === "All" || item.category === selectedCategory) &&
-    item.name.toLowerCase().includes(search.toLowerCase())
+  const filteredProducts = products.filter(
+    (item) =>
+      (selectedCategory === "All" || item.category === selectedCategory) &&
+      item.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <div className="bg-gradient-to-b from-red-50 to-red-100 min-h-screen font-sans">
 
-      {/* ✅ HERO (RESTORED) */}
+      {/* HERO */}
       <section className="text-center py-16 px-4 bg-red-300 shadow-md">
         <h1 className="text-5xl font-extrabold text-red-800">
           Neelu’s Kitchi’n
@@ -99,16 +110,11 @@ export default function Home() {
       {/* PRODUCTS */}
       <section className="px-6 pb-28">
         <div className="grid md:grid-cols-3 gap-6">
-
           {filteredProducts.map((item) => {
-
             const qty = cart[item.name]?.qty || 0;
 
             return (
-              <div
-                key={item.name}
-                className="bg-red-100 p-4 rounded-2xl shadow hover:shadow-xl transition"
-              >
+              <div key={item.name} className="bg-red-100 p-4 rounded-2xl shadow">
 
                 <img
                   src={`/images/${item.image}`}
@@ -120,7 +126,6 @@ export default function Home() {
                 <p className="text-sm text-black">{item.category}</p>
                 <p className="font-bold text-red-700">₹{item.price}</p>
 
-                {/* CART CONTROLS */}
                 {qty === 0 ? (
                   <button
                     onClick={() => addItem(item)}
@@ -135,15 +140,13 @@ export default function Home() {
                     <button onClick={() => addItem(item)}>+</button>
                   </div>
                 )}
-
               </div>
             );
           })}
-
         </div>
       </section>
 
-      {/* ✅ CART + WHATSAPP (BOTTOM COMBINED) */}
+      {/* CART */}
       {totalItems > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg px-6 py-4 flex justify-between items-center">
 
