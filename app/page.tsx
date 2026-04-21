@@ -19,15 +19,16 @@ export default function Home() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [error, setError] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState("ASAP");
 
-  // Load cart from localStorage
+  const [error, setError] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
+
   useEffect(() => {
     const saved = localStorage.getItem("cart");
     if (saved) setCart(JSON.parse(saved));
   }, []);
 
-  // Save cart
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
@@ -62,28 +63,43 @@ export default function Home() {
 
   const generateWhatsAppMessage = () => {
     let message = "Hi, I want to order:\n\n";
-    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\n\nOrder:\n`;
+    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\n\nOrder:\n`;
 
     Object.values(cart).forEach((item) => {
       message += `- ${item.name} x${item.qty} (₹${item.price * item.qty})\n`;
     });
 
     message += `\nTotal: ₹${totalPrice}`;
-
     return `https://wa.me/919315113365?text=${encodeURIComponent(message)}`;
   };
 
-  // ✅ FIXED VALIDATION FUNCTION
   const handleOrder = () => {
     if (!name || !phone || !address) {
       setError("Please fill all details");
       return;
     }
 
-    setError("");
+    if (!/^\d{10}$/.test(phone)) {
+      setError("Enter valid 10-digit phone number");
+      return;
+    }
 
-    const url = generateWhatsAppMessage();
-    window.open(url, "_blank");
+    setError("");
+    setShowSummary(true);
+  };
+
+  const confirmOrder = () => {
+    window.open(generateWhatsAppMessage(), "_blank");
+
+    // Clear cart after order
+    setCart({});
+    localStorage.removeItem("cart");
+
+    setShowSummary(false);
+    setShowCart(false);
+    setName("");
+    setPhone("");
+    setAddress("");
   };
 
   const filteredProducts = products.filter(
@@ -95,96 +111,68 @@ export default function Home() {
   return (
     <div className="bg-gradient-to-b from-red-50 to-red-100 min-h-screen font-sans">
 
-      {/* HERO */}
-      <section className="text-center py-16 px-4 bg-red-300 shadow-md">
-        <h1 className="text-5xl font-extrabold text-red-800">
-          Neelu’s Kitchi’n
-        </h1>
-        <p className="mt-3 text-lg text-black">
-          From Pickles to Plates — Everything Homemade ❤️
-        </p>
+      <section className="text-center py-16 bg-red-300">
+        <h1 className="text-5xl font-bold text-red-800">Neelu’s Kitchi’n</h1>
+        <p className="text-black">Everything Homemade ❤️</p>
       </section>
 
       {!showCart && (
         <>
-          {/* SEARCH */}
           <div className="px-6 mt-6">
             <input
               type="text"
-              placeholder="Search your favorite food..."
-              className="w-full p-3 rounded-xl border shadow text-black"
+              placeholder="Search..."
+              className="w-full p-3 border rounded text-black"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          {/* CATEGORIES */}
-          <section className="flex gap-3 px-6 py-6 overflow-x-auto">
+          <div className="flex gap-3 px-6 py-4 overflow-x-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2 rounded-full font-semibold ${
-                  selectedCategory === cat
-                    ? "bg-red-600 text-white"
-                    : "bg-white text-black border"
+                className={`px-4 py-2 rounded ${
+                  selectedCategory === cat ? "bg-red-600 text-white" : "bg-white text-black border"
                 }`}
               >
                 {cat}
               </button>
             ))}
-          </section>
+          </div>
 
-          {/* PRODUCTS */}
-          <section className="px-6 pb-32">
-            <div className="grid md:grid-cols-3 gap-6">
-              {filteredProducts.map((item) => {
-                const qty = cart[item.name]?.qty || 0;
+          <div className="grid md:grid-cols-3 gap-6 px-6 pb-24">
+            {filteredProducts.map((item) => {
+              const qty = cart[item.name]?.qty || 0;
 
-                return (
-                  <div key={item.name} className="bg-red-100 p-4 rounded-2xl shadow">
+              return (
+                <div key={item.name} className="bg-red-100 p-4 rounded-xl">
+                  <img src={`/images/${item.image}`} className="h-40 w-full rounded mb-2" />
+                  <h3 className="text-black font-bold">{item.name}</h3>
+                  <p className="text-black">{item.category}</p>
+                  <p className="text-red-700 font-bold">₹{item.price}</p>
 
-                    <img
-                      src={`/images/${item.image}`}
-                      className="h-44 w-full object-cover rounded-lg mb-3"
-                      alt={item.name}
-                    />
+                  {qty === 0 ? (
+                    <button onClick={() => addItem(item)} className="bg-red-600 text-white w-full mt-2 py-2 rounded">
+                      Add to Cart
+                    </button>
+                  ) : (
+                    <div className="flex justify-between mt-2 bg-red-600 text-white px-3 py-2 rounded">
+                      <button onClick={() => removeItem(item)}>-</button>
+                      <span>{qty}</span>
+                      <button onClick={() => addItem(item)}>+</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-                    <h3 className="text-lg font-bold text-black">{item.name}</h3>
-                    <p className="text-sm text-black">{item.category}</p>
-                    <p className="font-bold text-red-700">₹{item.price}</p>
-
-                    {qty === 0 ? (
-                      <button
-                        onClick={() => addItem(item)}
-                        className="mt-3 w-full bg-red-600 text-white py-2 rounded-lg"
-                      >
-                        Add to Cart
-                      </button>
-                    ) : (
-                      <div className="flex justify-between items-center mt-3 bg-red-600 text-white rounded-lg px-4 py-2">
-                        <button onClick={() => removeItem(item)}>-</button>
-                        <span className="font-bold">{qty}</span>
-                        <button onClick={() => addItem(item)}>+</button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* VIEW CART */}
           {totalItems > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg px-6 py-4 flex justify-between items-center">
-              <p className="text-black font-bold text-lg">
-                {totalItems} items | ₹{totalPrice}
-              </p>
-
-              <button
-                onClick={() => setShowCart(true)}
-                className="bg-red-600 text-white px-6 py-2 rounded-lg"
-              >
+            <div className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-between">
+              <p className="text-black font-bold">{totalItems} items | ₹{totalPrice}</p>
+              <button onClick={() => setShowCart(true)} className="bg-red-600 text-white px-6 py-2 rounded">
                 View Cart
               </button>
             </div>
@@ -192,58 +180,63 @@ export default function Home() {
         </>
       )}
 
-      {/* CART PAGE */}
+      {/* CART */}
       {showCart && (
         <div className="p-6">
-          <button onClick={() => setShowCart(false)} className="mb-4 text-red-600">
+          <button onClick={() => setShowCart(false)} className="text-red-600 mb-4">
             ← Back
           </button>
 
-          <h2 className="text-2xl font-bold text-black mb-4">Your Cart</h2>
+          <h2 className="text-black font-bold text-xl mb-2">Your Cart</h2>
 
           {Object.values(cart).map((item) => (
-            <div key={item.name} className="flex justify-between mb-2 text-black">
+            <div key={item.name} className="flex justify-between text-black">
               <span>{item.name} x{item.qty}</span>
               <span>₹{item.price * item.qty}</span>
             </div>
           ))}
 
-          <p className="font-bold text-red-700 mt-3">Total: ₹{totalPrice}</p>
+          <p className="text-red-700 font-bold mt-3">Total: ₹{totalPrice}</p>
 
-          {/* FORM */}
           <div className="mt-4 space-y-2">
-            <input
-              placeholder="Name"
+            <input className="w-full border p-2 text-black" placeholder="Name" value={name} onChange={(e)=>setName(e.target.value)} />
+            <input className="w-full border p-2 text-black" placeholder="Phone" value={phone} onChange={(e)=>setPhone(e.target.value)} />
+            <input className="w-full border p-2 text-black" placeholder="Address" value={address} onChange={(e)=>setAddress(e.target.value)} />
+
+            <select
               className="w-full border p-2 text-black"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              placeholder="Phone"
-              className="w-full border p-2 text-black"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
-            <input
-              placeholder="Address"
-              className="w-full border p-2 text-black"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-            />
+              value={deliveryTime}
+              onChange={(e)=>setDeliveryTime(e.target.value)}
+            >
+              <option>ASAP</option>
+              <option>Evening (6-9 PM)</option>
+            </select>
           </div>
 
-          {/* ERROR */}
-          {error && (
-            <p className="text-red-600 mt-2">{error}</p>
-          )}
+          {error && <p className="text-red-600 mt-2">{error}</p>}
 
-          {/* BUTTON (VALIDATION WORKS NOW) */}
-          <button
-            onClick={handleOrder}
-            className="block w-full text-center bg-green-600 text-white py-3 rounded mt-4"
-          >
-            Confirm Order
+          <button onClick={handleOrder} className="w-full bg-green-600 text-white py-3 rounded mt-4">
+            Proceed to Order
           </button>
+
+          {/* SUMMARY */}
+          {showSummary && (
+            <div className="mt-4 p-4 bg-white border rounded text-black">
+              <h3 className="font-bold mb-2">Confirm Order</h3>
+
+              {Object.values(cart).map((item) => (
+                <div key={item.name}>
+                  {item.name} x{item.qty}
+                </div>
+              ))}
+
+              <p className="font-bold mt-2">Total ₹{totalPrice}</p>
+
+              <button onClick={confirmOrder} className="w-full bg-green-600 text-white py-2 mt-3 rounded">
+                Confirm & Open WhatsApp
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
