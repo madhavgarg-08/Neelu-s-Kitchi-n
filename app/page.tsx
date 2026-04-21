@@ -20,10 +20,8 @@ export default function Home() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [deliveryTime, setDeliveryTime] = useState("ASAP");
-  const [payment, setPayment] = useState("COD");
 
   const [error, setError] = useState("");
-  const [showQR, setShowQR] = useState(false);
 
   // Load cart
   useEffect(() => {
@@ -66,7 +64,7 @@ export default function Home() {
 
   const generateWhatsAppMessage = () => {
     let message = "Hi, I want to order:\n\n";
-    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\nPayment: ${payment}\nStatus: Unpaid\n\nOrder:\n`;
+    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\nPayment: Cash on Delivery\n\nOrder:\n`;
 
     Object.values(cart).forEach((item) => {
       message += `- ${item.name} x${item.qty} (₹${item.price * item.qty})\n`;
@@ -90,24 +88,12 @@ export default function Home() {
 
     setError("");
 
-    if (payment === "UPI") {
-      setShowQR(true);
-    } else {
-      window.open(generateWhatsAppMessage(), "_blank");
-      clearAll();
-    }
-  };
-
-  const goToWhatsAppAfterQR = () => {
     window.open(generateWhatsAppMessage(), "_blank");
-    clearAll();
-  };
 
-  const clearAll = () => {
+    // Clear cart after order
     setCart({});
     localStorage.removeItem("cart");
     setShowCart(false);
-    setShowQR(false);
     setName("");
     setPhone("");
     setAddress("");
@@ -137,6 +123,7 @@ export default function Home() {
 
       {!showCart && (
         <>
+          {/* SEARCH */}
           <div className="px-6">
             <input
               type="text"
@@ -147,6 +134,7 @@ export default function Home() {
             />
           </div>
 
+          {/* CATEGORIES */}
           <div className="flex gap-3 px-6 py-4 overflow-x-auto">
             {categories.map((cat) => (
               <button
@@ -161,6 +149,7 @@ export default function Home() {
             ))}
           </div>
 
+          {/* PRODUCTS */}
           <div className="grid md:grid-cols-3 gap-6 px-6 pb-24">
             {filteredProducts.map((item) => {
               const qty = cart[item.name]?.qty || 0;
@@ -168,7 +157,6 @@ export default function Home() {
               return (
                 <div key={item.name} className="bg-red-100 p-4 rounded-xl">
 
-                  {/* IMAGE FIX */}
                   <img
                     src={`/images/${item.image}`}
                     className="w-full aspect-[4/3] object-cover rounded-lg mb-3"
@@ -195,6 +183,7 @@ export default function Home() {
             })}
           </div>
 
+          {/* CART BAR */}
           {totalItems > 0 && (
             <div className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-between">
               <p className="text-black font-bold">{totalItems} items | ₹{totalPrice}</p>
@@ -206,7 +195,7 @@ export default function Home() {
         </>
       )}
 
-      {/* CART */}
+      {/* CART PAGE */}
       {showCart && (
         <div className="p-6">
           <button onClick={() => setShowCart(false)} className="text-red-600 mb-4">← Back</button>
@@ -222,6 +211,7 @@ export default function Home() {
 
           <p className="text-red-700 font-bold mt-3">Total ₹{totalPrice}</p>
 
+          {/* FORM */}
           <div className="mt-4 space-y-2">
             <input className="w-full border p-2 text-black" placeholder="Name" value={name} onChange={(e)=>setName(e.target.value)} />
             <input className="w-full border p-2 text-black" placeholder="Phone" value={phone} onChange={(e)=>setPhone(e.target.value)} />
@@ -231,41 +221,13 @@ export default function Home() {
               <option>ASAP</option>
               <option>Evening (6-9 PM)</option>
             </select>
-
-            <select className="w-full border p-2 text-black" value={payment} onChange={(e)=>setPayment(e.target.value)}>
-              <option value="COD">Cash on Delivery</option>
-              <option value="UPI">Pay via UPI</option>
-            </select>
           </div>
 
           {error && <p className="text-red-600 mt-2">{error}</p>}
 
           <button onClick={handleOrder} className="w-full bg-green-600 text-white py-3 rounded mt-4">
-            Proceed to Order
+            Confirm Order (COD)
           </button>
-
-          {/* QR SCREEN */}
-          {showQR && (
-            <div className="mt-4 text-center">
-              <p className="text-black font-bold mb-2">Scan & Pay</p>
-
-              <img
-                src="/images/upi_qr.jpeg"
-                className="mx-auto w-52 rounded"
-              />
-
-              <p className="text-sm text-black mt-2">
-                After payment, continue to WhatsApp to confirm order
-              </p>
-
-              <button
-                onClick={goToWhatsAppAfterQR}
-                className="w-full bg-green-600 text-white py-2 mt-3 rounded"
-              >
-                Continue to WhatsApp
-              </button>
-            </div>
-          )}
         </div>
       )}
     </div>
