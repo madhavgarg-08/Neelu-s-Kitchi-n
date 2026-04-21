@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Product = {
   name: string;
@@ -8,19 +8,31 @@ type Product = {
   image: string;
 };
 
-type CartItem = Product & {
-  qty: number;
-};
+type CartItem = Product & { qty: number };
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
   const [showCart, setShowCart] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
+
+  const [error, setError] = useState("");
+
+  // 🔥 LOAD CART FROM STORAGE
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) setCart(JSON.parse(savedCart));
+  }, []);
+
+  // 🔥 SAVE CART
+  useEffect(() => {
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
   const products: Product[] = [
     { name: "Rajma Chawal", category: "Meals", price: 120, image: "rajmachawal.jpg" },
@@ -50,6 +62,20 @@ export default function Home() {
   const totalItems = Object.values(cart).reduce((sum, i) => sum + i.qty, 0);
   const totalPrice = Object.values(cart).reduce((sum, i) => sum + i.qty * i.price, 0);
 
+  const handleOrder = () => {
+    if (!name || !phone || !address) {
+      setError("Please fill all details");
+      return;
+    }
+
+    setError("");
+    setShowSuccess(true);
+
+    setTimeout(() => {
+      window.open(generateWhatsAppMessage(), "_blank");
+    }, 1500);
+  };
+
   const generateWhatsAppMessage = () => {
     let message = "Hi, I want to order:\n\n";
     message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\n\nOrder:\n`;
@@ -72,15 +98,21 @@ export default function Home() {
     <div className="bg-red-50 min-h-screen font-sans">
 
       {/* HERO */}
-      <section className="text-center py-16 bg-red-300">
-        <h1 className="text-5xl font-bold text-red-800">Neelu’s Kitchi’n</h1>
-        <p className="text-black mt-2">Everything Homemade ❤️</p>
+      <section className="text-center py-14 bg-red-300">
+        <h1 className="text-4xl font-bold text-red-800">Neelu’s Kitchi’n</h1>
+        <p className="text-black">Everything Homemade ❤️</p>
       </section>
 
-      {/* MAIN */}
+      {/* TRUST SECTION */}
+      <div className="flex justify-center gap-4 text-black py-3 text-sm">
+        <span>❤️ Homemade</span>
+        <span>🍽 Fresh Daily</span>
+        <span>🧼 Hygienic</span>
+      </div>
+
       {!showCart && (
         <>
-          <div className="px-6 mt-6">
+          <div className="px-4">
             <input
               type="text"
               placeholder="Search food..."
@@ -90,12 +122,12 @@ export default function Home() {
             />
           </div>
 
-          <div className="flex gap-3 px-6 py-4 overflow-x-auto">
+          <div className="flex gap-2 px-4 py-3 overflow-x-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded ${
+                className={`px-4 py-2 rounded text-sm ${
                   selectedCategory === cat ? "bg-red-600 text-white" : "bg-white text-black border"
                 }`}
               >
@@ -104,20 +136,20 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6 px-6 pb-24">
+          <div className="grid md:grid-cols-3 gap-4 px-4 pb-24">
             {filteredProducts.map((item) => {
               const qty = cart[item.name]?.qty || 0;
 
               return (
-                <div key={item.name} className="bg-red-100 p-4 rounded-xl">
-                  <img src={`/images/${item.image}`} className="h-40 w-full object-cover rounded mb-2" />
+                <div key={item.name} className="bg-red-100 p-3 rounded-xl">
+                  <img src={`/images/${item.image}`} className="h-36 w-full object-cover rounded mb-2" />
                   <h3 className="text-black font-bold">{item.name}</h3>
-                  <p className="text-black">{item.category}</p>
+                  <p className="text-black text-sm">{item.category}</p>
                   <p className="text-red-700 font-bold">₹{item.price}</p>
 
                   {qty === 0 ? (
                     <button onClick={() => addItem(item)} className="bg-red-600 text-white w-full mt-2 py-2 rounded">
-                      Add to Cart
+                      Add
                     </button>
                   ) : (
                     <div className="flex justify-between mt-2 bg-red-600 text-white px-3 py-2 rounded">
@@ -131,14 +163,10 @@ export default function Home() {
             })}
           </div>
 
-          {/* VIEW CART BUTTON */}
           {totalItems > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-between">
+            <div className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-between items-center">
               <p className="text-black font-bold">{totalItems} items | ₹{totalPrice}</p>
-              <button
-                onClick={() => setShowCart(true)}
-                className="bg-red-600 text-white px-6 py-2 rounded"
-              >
+              <button onClick={() => setShowCart(true)} className="bg-red-600 text-white px-5 py-2 rounded">
                 View Cart
               </button>
             </div>
@@ -148,35 +176,42 @@ export default function Home() {
 
       {/* CART PAGE */}
       {showCart && (
-        <div className="p-6">
-          <button onClick={() => setShowCart(false)} className="mb-4 text-red-600">
+        <div className="p-4">
+          <button onClick={() => setShowCart(false)} className="text-red-600 mb-3">
             ← Back
           </button>
 
-          <h2 className="text-2xl font-bold text-black mb-4">Your Cart</h2>
+          <h2 className="text-xl font-bold text-black">Your Cart</h2>
 
           {Object.values(cart).map((item) => (
-            <div key={item.name} className="flex justify-between mb-2 text-black">
+            <div key={item.name} className="flex justify-between text-black mt-2">
               <span>{item.name} x{item.qty}</span>
               <span>₹{item.price * item.qty}</span>
             </div>
           ))}
 
-          <p className="font-bold text-red-700 mt-3">Total: ₹{totalPrice}</p>
+          <p className="text-red-700 font-bold mt-3">Total: ₹{totalPrice}</p>
 
-          {/* FORM */}
           <div className="mt-4 space-y-2">
-            <input placeholder="Name" className="w-full border p-2 text-black" value={name} onChange={(e)=>setName(e.target.value)} />
-            <input placeholder="Phone" className="w-full border p-2 text-black" value={phone} onChange={(e)=>setPhone(e.target.value)} />
-            <input placeholder="Address" className="w-full border p-2 text-black" value={address} onChange={(e)=>setAddress(e.target.value)} />
+            <input className="w-full border p-2 text-black" placeholder="Name" value={name} onChange={(e)=>setName(e.target.value)} />
+            <input className="w-full border p-2 text-black" placeholder="Phone" value={phone} onChange={(e)=>setPhone(e.target.value)} />
+            <input className="w-full border p-2 text-black" placeholder="Address" value={address} onChange={(e)=>setAddress(e.target.value)} />
           </div>
 
-          <a
-            href={generateWhatsAppMessage()}
-            className="block text-center bg-green-600 text-white py-3 rounded mt-4"
+          {error && <p className="text-red-600 mt-2">{error}</p>}
+
+          <button
+            onClick={handleOrder}
+            className="w-full bg-green-600 text-white py-3 rounded mt-4"
           >
-            Confirm Order on WhatsApp
-          </a>
+            Confirm Order
+          </button>
+
+          {showSuccess && (
+            <p className="text-green-600 mt-2 text-center">
+              ✅ Order Ready! Opening WhatsApp...
+            </p>
+          )}
         </div>
       )}
     </div>
