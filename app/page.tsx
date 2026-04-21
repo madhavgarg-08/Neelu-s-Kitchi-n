@@ -24,6 +24,7 @@ export default function Home() {
 
   const [error, setError] = useState("");
   const [showSummary, setShowSummary] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("cart");
@@ -64,17 +65,13 @@ export default function Home() {
 
   const generateWhatsAppMessage = () => {
     let message = "Hi, I want to order:\n\n";
-    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\nPayment: ${payment}\n\nOrder:\n`;
+    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\n\nOrder:\n`;
 
     Object.values(cart).forEach((item) => {
       message += `- ${item.name} x${item.qty} (₹${item.price * item.qty})\n`;
     });
 
     message += `\nTotal: ₹${totalPrice}`;
-
-    if (payment === "UPI") {
-      message += `\nUPI ID: 9711262985@pthdfc`;
-    }
 
     return `https://wa.me/919315113365?text=${encodeURIComponent(message)}`;
   };
@@ -91,17 +88,25 @@ export default function Home() {
     }
 
     setError("");
-    setShowSummary(true);
+
+    if (payment === "UPI") {
+      setShowQR(true);
+    } else {
+      window.open(generateWhatsAppMessage(), "_blank");
+      clearAll();
+    }
   };
 
-  const confirmOrder = () => {
+  const confirmUPIOrder = () => {
     window.open(generateWhatsAppMessage(), "_blank");
+    clearAll();
+  };
 
+  const clearAll = () => {
     setCart({});
     localStorage.removeItem("cart");
-
-    setShowSummary(false);
     setShowCart(false);
+    setShowQR(false);
     setName("");
     setPhone("");
     setAddress("");
@@ -116,9 +121,10 @@ export default function Home() {
   return (
     <div className="bg-gradient-to-b from-red-50 to-red-100 min-h-screen font-sans">
 
-      <section className="text-center py-16 px-4 bg-red-300 shadow-md">
-        <h1 className="text-5xl font-extrabold text-red-800">Neelu’s Kitchi’n</h1>
-        <p className="mt-3 text-lg text-black">From Pickles to Plates — Everything Homemade ❤️</p>
+      {/* HERO */}
+      <section className="text-center py-16 bg-red-300">
+        <h1 className="text-5xl font-bold text-red-800">Neelu’s Kitchi’n</h1>
+        <p className="text-black">From Pickles to Plates — Everything Homemade ❤️</p>
       </section>
 
       {/* TRUST */}
@@ -130,69 +136,66 @@ export default function Home() {
 
       {!showCart && (
         <>
-          <div className="px-6 mt-4">
+          <div className="px-6">
             <input
               type="text"
-              placeholder="Search your favorite food..."
-              className="w-full p-3 rounded-xl border shadow text-black"
+              placeholder="Search..."
+              className="w-full p-3 border rounded text-black"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <section className="flex gap-3 px-6 py-6 overflow-x-auto">
+          <div className="flex gap-3 px-6 py-4 overflow-x-auto">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-5 py-2 rounded-full font-semibold ${
-                  selectedCategory === cat
-                    ? "bg-red-600 text-white"
-                    : "bg-white text-black border"
+                className={`px-4 py-2 rounded ${
+                  selectedCategory === cat ? "bg-red-600 text-white" : "bg-white text-black border"
                 }`}
               >
                 {cat}
               </button>
             ))}
-          </section>
+          </div>
 
-          <section className="px-6 pb-32">
-            <div className="grid md:grid-cols-3 gap-6">
-              {filteredProducts.map((item) => {
-                const qty = cart[item.name]?.qty || 0;
+          <div className="grid md:grid-cols-3 gap-6 px-6 pb-24">
+            {filteredProducts.map((item) => {
+              const qty = cart[item.name]?.qty || 0;
 
-                return (
-                  <div key={item.name} className="bg-red-100 p-4 rounded-2xl shadow">
+              return (
+                <div key={item.name} className="bg-red-100 p-4 rounded-xl">
 
-                    <img
-                      src={`/images/${item.image}`}
-                      className="h-52 w-full object-contain bg-white rounded-lg mb-3"
-                      alt={item.name}
-                    />
+                  {/* ✅ IMAGE FIXED */}
+                  <img
+                    src={`/images/${item.image}`}
+                    className="w-full aspect-[4/3] object-cover rounded-lg mb-3"
+                    alt={item.name}
+                  />
 
-                    <h3 className="text-lg font-bold text-black">{item.name}</h3>
-                    <p className="text-sm text-black">{item.category}</p>
-                    <p className="font-bold text-red-700">₹{item.price}</p>
+                  <h3 className="text-black font-bold">{item.name}</h3>
+                  <p className="text-black">{item.category}</p>
+                  <p className="text-red-700 font-bold">₹{item.price}</p>
 
-                    {qty === 0 ? (
-                      <button onClick={() => addItem(item)} className="mt-3 w-full bg-red-600 text-white py-2 rounded-lg">
-                        Add to Cart
-                      </button>
-                    ) : (
-                      <div className="flex justify-between mt-3 bg-red-600 text-white px-4 py-2 rounded-lg">
-                        <button onClick={() => removeItem(item)}>-</button>
-                        <span>{qty}</span>
-                        <button onClick={() => addItem(item)}>+</button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                  {qty === 0 ? (
+                    <button onClick={() => addItem(item)} className="bg-red-600 text-white w-full mt-2 py-2 rounded">
+                      Add to Cart
+                    </button>
+                  ) : (
+                    <div className="flex justify-between mt-2 bg-red-600 text-white px-3 py-2 rounded">
+                      <button onClick={() => removeItem(item)}>-</button>
+                      <span>{qty}</span>
+                      <button onClick={() => addItem(item)}>+</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           {totalItems > 0 && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow px-6 py-4 flex justify-between">
+            <div className="fixed bottom-0 left-0 right-0 bg-white p-4 flex justify-between">
               <p className="text-black font-bold">{totalItems} items | ₹{totalPrice}</p>
               <button onClick={() => setShowCart(true)} className="bg-red-600 text-white px-6 py-2 rounded">
                 View Cart
@@ -240,13 +243,17 @@ export default function Home() {
             Proceed to Order
           </button>
 
-          {showSummary && (
-            <div className="mt-4 p-4 bg-white border rounded text-black">
-              <h3 className="font-bold">Confirm Order</h3>
-              <p>Total ₹{totalPrice}</p>
+          {/* QR */}
+          {showQR && (
+            <div className="mt-4 text-center">
+              <p className="text-black mb-2 font-bold">Scan & Pay</p>
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=9711262985@pthdfc`}
+                className="mx-auto"
+              />
 
-              <button onClick={confirmOrder} className="w-full bg-green-600 text-white py-2 mt-3 rounded">
-                Confirm & Open WhatsApp
+              <button onClick={confirmUPIOrder} className="w-full bg-green-600 text-white py-2 mt-3 rounded">
+                I have Paid, Continue
               </button>
             </div>
           )}
