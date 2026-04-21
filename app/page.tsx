@@ -17,6 +17,11 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<Record<string, CartItem>>({});
 
+  // ✅ NEW STATES
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+
   const products: Product[] = [
     { name: "Rajma Chawal", category: "Meals", price: 120, image: "rajmachawal.jpg" },
     { name: "Chole Bhature", category: "Meals", price: 100, image: "cholebhature.jpg" },
@@ -51,12 +56,22 @@ export default function Home() {
   const totalItems = Object.values(cart).reduce((sum, i) => sum + i.qty, 0);
   const totalPrice = Object.values(cart).reduce((sum, i) => sum + i.qty * i.price, 0);
 
+  // ✅ UPDATED WHATSAPP MESSAGE
   const generateWhatsAppMessage = () => {
-    let message = "Hi, I want to order:\n";
+    let message = "Hi, I want to order:\n\n";
+
+    message += `Name: ${name}\n`;
+    message += `Phone: ${phone}\n`;
+    message += `Address: ${address}\n\n`;
+
+    message += "Order:\n";
+
     Object.values(cart).forEach((item) => {
       message += `- ${item.name} x${item.qty} (₹${item.price * item.qty})\n`;
     });
-    message += `Total: ₹${totalPrice}`;
+
+    message += `\nTotal: ₹${totalPrice}`;
+
     return `https://wa.me/919315113365?text=${encodeURIComponent(message)}`;
   };
 
@@ -108,7 +123,7 @@ export default function Home() {
       </section>
 
       {/* PRODUCTS */}
-      <section className="px-6 pb-28">
+      <section className="px-6 pb-32">
         <div className="grid md:grid-cols-3 gap-6">
           {filteredProducts.map((item) => {
             const qty = cart[item.name]?.qty || 0;
@@ -146,11 +161,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CART */}
+      {/* ✅ UPDATED CART (UI SAME + FORM ADDED) */}
       {totalItems > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg px-6 py-4 flex justify-between items-center">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg px-6 py-4 space-y-3">
 
-          <div>
+          <div className="flex justify-between items-center">
             <p className="text-black font-bold text-lg">
               {totalItems} items
             </p>
@@ -159,9 +174,34 @@ export default function Home() {
             </p>
           </div>
 
+          {/* FORM */}
+          <input
+            type="text"
+            placeholder="Your Name"
+            className="w-full border p-2 rounded"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+
+          <input
+            type="text"
+            placeholder="Phone Number"
+            className="w-full border p-2 rounded"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+
+          <input
+            type="text"
+            placeholder="Delivery Address"
+            className="w-full border p-2 rounded"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
+
           <a
             href={generateWhatsAppMessage()}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-semibold"
+            className="block text-center bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-semibold"
           >
             Order via WhatsApp
           </a>
