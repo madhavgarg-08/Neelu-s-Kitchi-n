@@ -23,14 +23,15 @@ export default function Home() {
   const [payment, setPayment] = useState("COD");
 
   const [error, setError] = useState("");
-  const [showSummary, setShowSummary] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
+  // Load cart
   useEffect(() => {
     const saved = localStorage.getItem("cart");
     if (saved) setCart(JSON.parse(saved));
   }, []);
 
+  // Save cart
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
@@ -65,7 +66,7 @@ export default function Home() {
 
   const generateWhatsAppMessage = () => {
     let message = "Hi, I want to order:\n\n";
-    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\n\nOrder:\n`;
+    message += `Name: ${name}\nPhone: ${phone}\nAddress: ${address}\nDelivery: ${deliveryTime}\nPayment: ${payment}\nStatus: Unpaid\n\nOrder:\n`;
 
     Object.values(cart).forEach((item) => {
       message += `- ${item.name} x${item.qty} (₹${item.price * item.qty})\n`;
@@ -97,7 +98,7 @@ export default function Home() {
     }
   };
 
-  const confirmUPIOrder = () => {
+  const goToWhatsAppAfterQR = () => {
     window.open(generateWhatsAppMessage(), "_blank");
     clearAll();
   };
@@ -167,7 +168,7 @@ export default function Home() {
               return (
                 <div key={item.name} className="bg-red-100 p-4 rounded-xl">
 
-                  {/* ✅ IMAGE FIXED */}
+                  {/* IMAGE FIX */}
                   <img
                     src={`/images/${item.image}`}
                     className="w-full aspect-[4/3] object-cover rounded-lg mb-3"
@@ -243,17 +244,25 @@ export default function Home() {
             Proceed to Order
           </button>
 
-          {/* QR */}
+          {/* QR SCREEN */}
           {showQR && (
             <div className="mt-4 text-center">
-              <p className="text-black mb-2 font-bold">Scan & Pay</p>
+              <p className="text-black font-bold mb-2">Scan & Pay</p>
+
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=9711262985@pthdfc`}
-                className="mx-auto"
+                src="/images/upi_qr.jpeg"
+                className="mx-auto w-52 rounded"
               />
 
-              <button onClick={confirmUPIOrder} className="w-full bg-green-600 text-white py-2 mt-3 rounded">
-                I have Paid, Continue
+              <p className="text-sm text-black mt-2">
+                After payment, continue to WhatsApp to confirm order
+              </p>
+
+              <button
+                onClick={goToWhatsAppAfterQR}
+                className="w-full bg-green-600 text-white py-2 mt-3 rounded"
+              >
+                Continue to WhatsApp
               </button>
             </div>
           )}
